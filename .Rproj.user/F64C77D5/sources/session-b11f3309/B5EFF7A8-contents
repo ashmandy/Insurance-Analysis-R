@@ -1,0 +1,12 @@
+
+--- 
+title: "Insurance Cost Analysis"
+author: "Mandy Langlois"
+---
+  
+
+  library(tidyverse) 
+
+
+
+insurance = read_csv("insurance.csv")
