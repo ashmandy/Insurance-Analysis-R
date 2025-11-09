@@ -98,14 +98,6 @@ train =insurance[-train_index,]
 model = lm(charges ~ age + bmi + children+ smoker + region + sex, data = train)
 summary(model)
 
-library(caret)
-
-set.seed(123)
-
-train_index = createDataPartition(insurance$charges, p=0.8,list = FALSE)
-
-train=insurance[train_index,]
-test=insurance[-train_index,]
 
 # Model evaluation
 #simulating predictive charges for smokers vs non-smoker.
