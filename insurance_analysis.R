@@ -5,9 +5,11 @@ author: "Mandy Langlois"
 ---
  
   # Loading Library.
-  library(tidyverse) 
+  library(tidyverse)
   library(caret)
   library(ggplot2)
+  library(broom)
+
 
 
 
@@ -38,7 +40,7 @@ insurance = insurance |>
 
 # Exploratory Analysis:
     
-  # Distribution of charges   
+# Distribution of charges   
   
 ggplot(insurance,aes(charges)) +
   geom_histogram(bins=30, fill="orange", color="white")+
@@ -79,7 +81,8 @@ insurance|>
 set.seed(123)
 train_index = createDataPartition(insurance$charges, p= 0.8, list = FALSE) # creates index for 80% training data.
 train =insurance [train_index,] #splits into training and testing sets 
-train =insurance[-train_index,]
+test = insurance[-train_index,]
+
 # Predicting charges based on age, BMI,Children, smoker, region,sex.
 # the median being close to zero indicate that the model isnt over or under predicting.
 # The large min(-12663) and max(17646) indicates that outliers exist.Very low or high charges.
@@ -88,30 +91,25 @@ train =insurance[-train_index,]
 # * -> moderately significant (p<0.1)
 # .-> not significant 
 
-# Analysis: Smokers are the biggest cost drivers, they add about $21,000 more.
-# BMI: higher BMI results in higher charges.
-# Children: Slightly higher charges with more children.
-# Age: Some ages show significance difference. People in their 30s-60 pay higher charges.
+# Analysis: Smokers are the biggest cost drivers, they add $24,267 more.
+# BMI: higher BMI results in higher charges (+$328 per BMI point).
+# Children: Slightly higher charges with more children (+ $619 per child).
+# Age: Some ages show significance difference. People in their 30s-60s pay higher charges (age 60 = + $14,443).
 # region/sex: aren't a significant predictor.
-# Model accuracy: 79% of cost differences.
-# Error: typical prediction error = $6,000.
-model = lm(charges ~ age + bmi + children+ smoker + region + sex, data = train)
+# Region Southwest: Slightly higher (- $1,108, p=0.044)
+# Model accuracy: 77% of cost difference explained (R^2 = 0.7731).
+# Error: typical prediction error = $5,964.
+
+model = lm(charges ~ age + bmi + children + smoker + region + sex, data = train)
 summary(model)
 
-library(caret)
-
-set.seed(123)
-
-train_index = createDataPartition(insurance$charges, p=0.8,list = FALSE)
-
-train=insurance[train_index,]
-test=insurance[-train_index,]
 
 # Model evaluation
 #simulating predictive charges for smokers vs non-smoker.
 # RMSE: RMSE: 5342.639,my model predictions are off by about $5,343 from the actual insurance charge.
 # the smaller the rmse the better. I can try to reduce the rmse by adding interaction terms like smokers with 
 # a high BMI might behave differently.
+
 predictions = predict(model,newdata= test)
 RMSE =sqrt(mean((predictions-test$charges)^2))
 cat("RMSE:", RMSE,"\n")
