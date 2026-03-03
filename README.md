@@ -11,12 +11,12 @@ Predicting insurance charges based on demographic and health factors using linea
 2. Correlation analysis
 3. Train/test split (80/20)
 4. Linear regression modeling
-5. Performance evaluation (R² = 0.79, RMSE = $5,343)
+5. Performance evaluation (R² = 0.77, RMSE = $6,454)
 
 ## Key Findings
-- Smoking increases charges by $21,500.
+- Smoking increases charges by $24,267.
 - Higher BMI and older age increase predicted costs.
-- Model explains 79% of cost variation.
+- Model explains 77% of cost variation.
 
 ## Files
 - `insurance_analysis.R`: R script
