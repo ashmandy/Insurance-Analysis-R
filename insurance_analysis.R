@@ -106,7 +106,7 @@ summary(model)
 
 # Model evaluation
 #simulating predictive charges for smokers vs non-smoker.
-# RMSE: RMSE: 5342.639,my model predictions are off by about $5,343 from the actual insurance charge.
+# RMSE: RMSE: 6453.606,my model predictions are off by about $6,453 from the actual insurance charge.
 # the smaller the rmse the better. I can try to reduce the rmse by adding interaction terms like smokers with 
 # a high BMI might behave differently.
 
