@@ -4,113 +4,249 @@ title: "Insurance Cost Analysis:"
 author: "Mandy Langlois"
 ---
  
-  # Loading Library.
-  library(tidyverse)
-  library(caret)
-  library(ggplot2)
-  library(broom)
+# Load Library
+library(tidyverse)
+library(caret)
+library(ggplot2)
 
-
-
-
+#Load Data
 insurance = read_csv("insurance.csv")
 
-# Data Validation 
+
+# Data Validation/Exploration:
+
+# View first rows 
 head(insurance)
 
-# Data Exploration
+# Dataset structure check
 glimpse(insurance)
 
+# Summary statistic for each column 
 summary(insurance)
 
-# Data cleaning 
-# finding NA values
+# check for missing values in each column 
 colSums(is.na(insurance))
 
-# Converting categorical variables into factors
-#a s.factors: turns character strings into categorical variables(factors)
+# Data Cleaning:
+
+
+# Convert categorical columns into factors
+# a s.factors: turns character strings into categorical variables(factors)
 
 insurance = insurance |>
   mutate(
-    age = as.factor(age),
     sex = as.factor(sex),
+    smoker = as.factor(smoker),
     region = as.factor(region)
   )
+
+# Creating grouped version of BMI and age
+# Creating a simple risk flag based on smoking + BMI
+
+insurance = insurance |>
+ mutate(
+  bmi_group = case_when(
+    bmi < 18.5 ~ "Underweight",
+    bmi < 25 ~ "Normal",
+    bmi < 30 ~ "Overweight",
+    TRUE ~ "Obese"
+  ),
+bmi_group = factor(
+  bmi_group,
+  levels = c("Underweight","Normal","Overweight","Obese")
+),
+age_group = case_when(
+  age < 30 ~ "18-29",
+  age < 25 ~ "30-40",
+  age < 30 ~ "45-59",
+  TRUE ~"60+"
+),
+age_group = factor(
+  age_group,
+  levels = c("18-29","30-40","45-59","60+")
+),
+ high_risk_flag = case_when(
+   smoker == "yes" & bmi >= 30 ~ "High Risk",
+   smoker == "yes" ~ "Elevated Risk",
+   bmi >= 30 ~ "moderate Risk",
+   TRUE ~ "Standard Risk"
+ ),
+high_risk_flag = as.factor(high_risk_flag)
+)
 
 
 # Exploratory Analysis:
     
 # Distribution of charges   
-  
-ggplot(insurance,aes(charges)) +
+  ggplot(insurance,aes(charges)) +
   geom_histogram(bins=30, fill="orange", color="white")+
-  labs(title = "The Distribution of Charges")
+  labs(
+    title = "The Distribution of Insurance Charges",
+    x = "Smoking Status",
+    y = "Insurance Charge")
 
 
 # Charges by smoking status
-
 ggplot(insurance,aes(x=smoker, y= charges, fill = smoker)) +
   geom_boxplot()+
   labs("Charges by Smoking Status")
+
+# Charge by BMI group 
+ggplot(insurance, aes(x = bmi_group, y = charges, fill = bmi_group)) +
+  geom_boxplot() +
+  labs(
+    title = "Charges by BMI Group",
+    x = "BMI Group",
+    y = "Insurance Charges"
+  )
+
+# Charges by age group
+ggplot( insurance, aes(x = age_group, y = charges, fill = age_group)) +
+  geom_boxplot() +
+  labs(
+    title = "Charges by Age Group",
+    x = "Age Group",
+    y = "Insurance Charges"
+  )
   
+# Average charges by risk categories 
+risk_summary = insurance |>
+  group_by(high_risk_flag) |>
+  summarise(
+    avg_charges = mean(charges),
+    median_charges = median(charges),
+    members = n(),
+    .group = "drop"
+  )
+ print(risk_summary)
+
+
 #Correlation Analysis:
 
-# Analysis: Correlation values ranges from -1 to 1. Ranges 0.7-1.0 is a strong positive correlation,
-# 0.4-0.69 is moderate positive,0.1 to 0.39 is a weak positive,  0.o to 0.09 shows no correlation,
-# and -0.1 to -1.0 is a negative correlation. Knowing what we know about correlation values ranges,
-# the output suggest that at 0.01 there's no correlation between people's BMI and the number of children.
-# At a.20 there is a weak, but positive relationship between BMI and charges, charges tend to increase as BMI increase.
-# with a correlation range of 0.07,very weak positive, more children is slightly associated with higher charges but 
-# the effects are so small that its almost meaningless.
-
 insurance|>
-  select_if(is.numeric)|>
+  select(age, bmi, children, charges)|>
   cor()|>
   round(2)
 
-# Building Predictive Models:
 
-# training test split 
-# Coefficients( effect size for each variable),
-# p-values(significance),
-# R-squared(how much variance explained)
+# Train/ test split:
 
-#train contains 80% of data. use to train the model.
-# test contains 20%. used to evaluate model performance later.
-
+#train contains 80% of data. 
+# test contains 20% of the data. 
 set.seed(123)
-train_index = createDataPartition(insurance$charges, p= 0.8, list = FALSE) # creates index for 80% training data.
-train =insurance [train_index,] #splits into training and testing sets 
+
+train_index = createDataPartition(insurance$charges, p= 0.8, list = FALSE) 
+train = insurance [train_index,]
 test = insurance[-train_index,]
 
-# Predicting charges based on age, BMI,Children, smoker, region,sex.
-# the median being close to zero indicate that the model isnt over or under predicting.
-# The large min(-12663) and max(17646) indicates that outliers exist.Very low or high charges.
-# *** -> highly significant (p<0.0001)
-# ** -> significant (p<0.01)
-# * -> moderately significant (p<0.1)
-# .-> not significant 
 
-# Analysis: Smokers are the biggest cost drivers, they add $24,267 more.
-# BMI: higher BMI results in higher charges (+$328 per BMI point).
-# Children: Slightly higher charges with more children (+ $619 per child).
-# Age: Some ages show significance difference. People in their 30s-60s pay higher charges (age 60 = + $14,443).
-# region/sex: aren't a significant predictor.
-# Region Southwest: Slightly higher (- $1,108, p=0.044)
-# Model accuracy: 77% of cost difference explained (R^2 = 0.7731).
-# Error: typical prediction error = $5,964.
+# Baseline model:
 
-model = lm(charges ~ age + bmi + children + smoker + region + sex, data = train)
-summary(model)
+# First model: linear regression
+lm_baseline = lm(
+  charges ~ age + bmi + children + smoker + region + sex,
+  data = train
+)
+
+# Checking whether BMI and age behave differently for smokers
+lm_interaction = lm(
+  charges ~ age + bmi + children + smoker + region + sex + bmi:smoker + age:smoker,
+  data = train 
+)
+
+summary(lm_interaction)
 
 
-# Model evaluation
-#simulating predictive charges for smokers vs non-smoker.
-# RMSE: RMSE: 6453.606,my model predictions are off by about $6,453 from the actual insurance charge.
-# the smaller the rmse the better. I can try to reduce the rmse by adding interaction terms like smokers with 
-# a high BMI might behave differently.
+# Predictions:
 
-predictions = predict(model,newdata= test)
-RMSE =sqrt(mean((predictions-test$charges)^2))
-cat("RMSE:", RMSE,"\n")
+# Using both models to predict charges on the test set
+baseline_preds = predict(lm_baseline, newdata = test)
+interaction_preds = predict(lm_interaction, newdata = test)
+
+
+# Model evaluation:
+
+RMSE = function(actual, predicted) {
+  sqrt(mean((actual - predicted)^2))
+}
+
+MAE = function(actual, predicted) {
+  mean(abs(actual - predicted))
+}
+
+r_squared = function(actual, predicted) {
+  cor(actual, predicted)^2
+}
+
+
+# Comparing model performance
+model_results = tibble(
+  model = c( "Baseline LM", "Interaction LM"),
+  RMSE = c (
+    RMSE(test$charges, baseline_preds), 
+    RMSE (test$charges, interaction_preds)
+  ),
+  MAE = c(
+    MAE(test$charges, baseline_preds),
+    MAE (test$charges, interaction_preds)
+  ),
+  R_Squared = c(
+    r_squared(test$charges, baseline_preds),
+    r_squared (test$charges, interaction_preds)
+ )
+  )
+ print (model_results)
+ 
+ 
+ # Actual vs Predicted results:
+ 
+ # Keeping results from the better model using the interaction model 
+ results = test|>
+   mutate(
+     predicted = interaction_preds,
+     residual = charges - predicted,
+     abs_error = abs(residual)
+   )
+ head(model_results)
+
+ # Actual vs predicted plot
+ ggplot(results, aes(x = charges, y = predicted)) +
+   geom_point(alpha = 0.6) +
+   geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+   labs(
+     title = "Actual vs Predicted Insurance Charges",
+     x = "Actual Charges",
+     y = "Predicted Charges"
+   )
+
+ # Error by risk group
+ error_by_risk = results |>
+   group_by(high_risk_flag) |>
+   summarise(
+     mean_abs_error = mean(abs_error),
+     avg_actual = mean(charges),
+     members = n(),
+     .group = "drop"
+   )
+
+
+ # Final summary:
+segment_summary = insurance |>
+  group_by(high_risk_flag) |>
+  summarise(
+    avg_charges = mean(charges),
+    median_charges = median(charges),
+    total_charges = sum(charges),
+    members = n(),
+    .group = "drops"
+  ) |>
+  arrange(desc(avg_charges))
+
+print(segment_summary)
+
+ 
+ 
+ 
+ # Creating a visuals folder 
+dir.create("visuals")
 
