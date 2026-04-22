@@ -1,6 +1,6 @@
 
 --- 
-title: "Insurance Cost Analysis:"
+title: "Insurance Cost Drivers and High Risk Member"
 author: "Mandy Langlois"
 ---
  
@@ -211,7 +211,7 @@ model_results = tibble(
 
  # Actual vs predicted plot
  ggplot(results, aes(x = charges, y = predicted)) +
-   geom_point(alpha = 0.6) +
+   geom_point(alpha = 0.6, color = "blue") +
    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
    labs(
      title = "Actual vs Predicted Insurance Charges",
