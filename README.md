@@ -33,7 +33,7 @@ and insurance charges
 | `ggplot2` | Data visualization |
 | `dplyr` | Data wrangling |
 | `caret` | Model training and evaluation |
-| `lubridate` | Date handling |
+
 
 ---
 
@@ -121,9 +121,9 @@ interaction term was the strongest predictor in the model (p < 2e-16).
 ## Files
 | File | Description |
 |------|-------------|
-| `insurance_analysis.R` | Full R script including data cleaning, EDA, 
+| `insurance_analysis.R`| Full R script including data cleaning, EDA, 
 feature engineering, modeling, and evaluation |
-| `insurance.csv` | Source dataset (via Kaggle) |
+| `insurance.csv`| Source dataset (via Kaggle) |
 
 
 ---
