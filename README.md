@@ -125,12 +125,6 @@ interaction term was the strongest predictor in the model (p < 2e-16).
 feature engineering, modeling, and evaluation |
 | `insurance.csv` | Source dataset (via Kaggle) |
 
----
-
-## Notes
-The age group binning logic in the current script contains overlapping 
-conditions that result in all ages under 45 being classified as 18–29. 
-This is a known issue and will be corrected in a future update.
 
 ---
 
